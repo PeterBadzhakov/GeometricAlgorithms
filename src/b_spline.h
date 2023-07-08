@@ -6,6 +6,7 @@
 
 #define DEGREE 2
 
+
 typedef struct {
     size_t count;
     float* knots;
@@ -17,6 +18,7 @@ BSpline* b_spline_new(size_t count, SDL_Point* control_points);
 void b_spline_free(BSpline* spline);
 void b_spline_calculate_knots(BSpline* spline);
 void b_spline_calculate_coefficients(BSpline* spline);
+float b_spline_basis(int i, int degree, float t, float* knots);
 float b_spline_evaluate(BSpline* spline, float t);
 
 #endif // B_SPLINE_H

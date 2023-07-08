@@ -13,31 +13,42 @@
 
 Gui* gui_new() {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+        fprintf(stderr, "Error: Unable to initialize SDL: %s\n", SDL_GetError());
         return NULL;
     }
 
     if (TTF_Init() == -1) {
+        fprintf(stderr, "Error: Unable to initialize TTF: %s\n", TTF_GetError());
+        SDL_Quit();
         return NULL;
     }
 
-    Gui* gui = (Gui*)malloc(sizeof(Gui));
-    if (!gui) return NULL;
+    Gui* gui = (Gui*)calloc(1, sizeof(Gui));
+    if (!gui) {
+        fprintf(stderr, "Error: Unable to allocate memory for Gui\n");
+        TTF_Quit();
+        SDL_Quit();
+        return NULL;
+    }
 
     gui->window = SDL_CreateWindow("B-Spline Demo", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
         WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_SHOWN);
     if (!gui->window) {
+        fprintf(stderr, "Error: Unable to create window: %s\n", SDL_GetError());
         gui_free(gui);
         return NULL;
     }
 
     gui->renderer = SDL_CreateRenderer(gui->window, -1, SDL_RENDERER_ACCELERATED);
     if (!gui->renderer) {
+        fprintf(stderr, "Error: Unable to create renderer: %s\n", SDL_GetError());
         gui_free(gui);
         return NULL;
     }
 
-    gui->control_points = (SDL_Point*)malloc(sizeof(SDL_Point) * MAX_CONTROL_POINTS);
+    gui->control_points = (SDL_Point*)calloc(MAX_CONTROL_POINTS, sizeof(SDL_Point));
     if (!gui->control_points) {
+        fprintf(stderr, "Error: Unable to allocate memory for control points\n");
         gui_free(gui);
         return NULL;
     }
@@ -47,8 +58,9 @@ Gui* gui_new() {
     gui->spline = NULL;
     gui->quit = false;
 
-    gui->font = TTF_OpenFont("C:/Windows/Fonts/Times.ttf", 16); // Make sure to change the font path
+    gui->font = TTF_OpenFont("DejaVuSerif.ttf", 16); // Make sure to change the font path
     if (!gui->font) {
+        fprintf(stderr, "Error: Unable to open font: %s\n", TTF_GetError());
         gui_free(gui);
         return NULL;
     }
@@ -66,16 +78,18 @@ Gui* gui_new() {
     return gui;
 }
 
+
 void gui_free(Gui* gui) {
     if (gui) {
         if (gui->window) SDL_DestroyWindow(gui->window);
         if (gui->renderer) SDL_DestroyRenderer(gui->renderer);
-        free(gui->control_points);
         b_spline_free(gui->spline);
+        free(gui->control_points);
         TTF_CloseFont(gui->font);
-        free(gui);
-        SDL_Quit();
-    }
+    free(gui);
+    TTF_Quit();
+    SDL_Quit();
+}
 }
 
 void gui_run(Gui* gui) {
@@ -98,6 +112,10 @@ void gui_run(Gui* gui) {
                     gui->control_points[gui->control_point_count++] = (SDL_Point){ x, y };
                     b_spline_free(gui->spline);
                     gui->spline = b_spline_new(gui->control_point_count, gui->control_points);
+                    if (!gui->spline) {
+                        fprintf(stderr, "Error: Unable to create B-spline\n");
+                        gui->quit = true;
+                    }
                 }
             }
         }
@@ -107,11 +125,15 @@ void gui_run(Gui* gui) {
 
         SDL_SetRenderDrawColor(gui->renderer, 0, 0, 0, 255);
         if (gui->spline) {
-            float step = 1.0f / WINDOW_WIDTH;
-            for (float t = 0.0f; t <= 1.0f; t += step) {
-                int x = (int)(t * WINDOW_WIDTH);
+            float t_min = gui->spline->knots[DEGREE];
+            float t_max = gui->spline->knots[gui->spline->count + 1];
+            float step = (t_max - t_min) / (WINDOW_WIDTH - 1);
+            for (int i = 0; i < WINDOW_WIDTH; ++i) {
+                float t = t_min + i * step;
+                int x = i;
                 int y = (int)b_spline_evaluate(gui->spline, t);
-                SDL_RenderDrawPoint(gui->renderer, x, y);
+        
+            SDL_RenderDrawPoint(gui->renderer, x, y);
             }
         }
 

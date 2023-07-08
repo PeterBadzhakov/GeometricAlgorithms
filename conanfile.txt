@@ -1,5 +1,0 @@
-[requires]
-sdl2/2.0.12@bincrafters/stable
-
-[generators]
-txt

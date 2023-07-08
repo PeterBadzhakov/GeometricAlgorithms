@@ -1,0 +1,22 @@
+CC = x86_64-w64-mingw32-gcc
+CFLAGS = -Wall -Wextra -std=c11
+LDFLAGS = -L/usr/x86_64-w64-mingw32/lib -lmingw32 -lSDL2main -lSDL2 -lSDL2_image -lSDL2_ttf -mwindows -static-libgcc -static-libstdc++ -static -static-openblas
+INCLUDES = -I/usr/x86_64-w64-mingw32/include/SDL2
+
+SRC = main.c b_spline.c gui.c
+OBJ = $(SRC:.c=.o)
+EXECUTABLE = program.exe
+
+.PHONY: all clean
+
+all: $(EXECUTABLE)
+
+$(EXECUTABLE): $(OBJ)
+	$(CC) $(CFLAGS) $(OBJ) $(LDFLAGS) -o $@
+
+%.o: %.c
+	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
+
+clean:
+	rm -f $(OBJ) $(EXECUTABLE)
+

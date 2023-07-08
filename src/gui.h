@@ -6,6 +6,7 @@
 #include <SDL_ttf.h>
 #include "b_spline.h"
 
+
 typedef struct {
     SDL_Renderer* renderer;
     SDL_Window* window;
